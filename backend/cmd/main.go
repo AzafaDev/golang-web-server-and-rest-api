@@ -9,6 +9,7 @@ import (
 
 	"github.com/AzafaDev/golang-web-server-and-rest-api.git/internal/handler"
 	"github.com/AzafaDev/golang-web-server-and-rest-api.git/internal/repository"
+	"github.com/AzafaDev/golang-web-server-and-rest-api.git/internal/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -32,7 +33,8 @@ func main() {
 	defer db.Close()
 
 	postRepo := repository.NewPostRepository(db)
-	postHandler := handler.NewPostHandler(postRepo)
+	postService := service.NewPostService(postRepo)
+	postHandler := handler.NewPostHandler(postService)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
