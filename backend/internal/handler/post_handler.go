@@ -12,13 +12,13 @@ import (
 )
 
 type PostHandler struct {
-	service  service.PostService
+	service  *service.PostService
 	validate *validator.Validate
 }
 
 func NewPostHandler(svc *service.PostService) *PostHandler {
 	return &PostHandler{
-		service:  *svc,
+		service: svc,
 		validate: validator.New(),
 	}
 }
@@ -26,7 +26,7 @@ func NewPostHandler(svc *service.PostService) *PostHandler {
 func (h *PostHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	posts, err := h.service.GetAll(r.Context())
 	if err != nil {
-		http.Error(w, "Failed to fetch posts", http.StatusInternalServerError)
+		errorJSON(w, "Failed to fetch posts", http.StatusInternalServerError)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"data": posts})
@@ -37,9 +37,9 @@ func (h *PostHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	post, err := h.service.GetPostByID(r.Context(), id)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			http.Error(w, "Post not found", http.StatusNotFound)
+			errorJSON(w, "Post not found", http.StatusNotFound)
 		} else {
-			http.Error(w, "Error fetching post", http.StatusInternalServerError)
+			errorJSON(w, "Error fetching post", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -52,7 +52,7 @@ func (h *PostHandler) Post(w http.ResponseWriter, r *http.Request) {
 		Content string `json:"content" validate:"required,min=10"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+		errorJSON(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 	if err := h.validate.Struct(input); err != nil {
@@ -64,7 +64,7 @@ func (h *PostHandler) Post(w http.ResponseWriter, r *http.Request) {
 	}
 	newPost, err := h.service.CreatePost(r.Context(), input.Title, input.Content)
 	if err != nil {
-		http.Error(w, "Error in creating post", http.StatusInternalServerError)
+		errorJSON(w, "Error in creating post", http.StatusInternalServerError)
 		return
 	}
 	writeJSON(w, 201, map[string]any{"data": newPost})
@@ -79,14 +79,14 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 	p, err := h.service.GetPostByID(r.Context(), id)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			http.Error(w, "Post not found", http.StatusNotFound)
+			errorJSON(w, "Post not found", http.StatusNotFound)
 		} else {
-			http.Error(w, "Error fetching post", http.StatusInternalServerError)
+			errorJSON(w, "Error fetching post", http.StatusInternalServerError)
 		}
 		return
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+		errorJSON(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 	if err := h.validate.Struct(input); err != nil {
@@ -100,7 +100,7 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	updatedPost, err := h.service.UpdatePost(r.Context(), p)
 	if err != nil {
-		http.Error(w, "Error in updating post", http.StatusInternalServerError)
+		errorJSON(w, "Error in updating post", http.StatusInternalServerError)
 		return
 	}
 
@@ -112,14 +112,14 @@ func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	_, err := h.service.GetPostByID(r.Context(), id)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			http.Error(w, "Post not found", http.StatusNotFound)
+			errorJSON(w, "Post not found", http.StatusNotFound)
 		} else {
-			http.Error(w, "Error fetching post", http.StatusInternalServerError)
+			errorJSON(w, "Error fetching post", http.StatusInternalServerError)
 		}
 		return
 	}
 	if err := h.service.DeletePost(r.Context(), id); err != nil {
-		http.Error(w, "Error in deleting post", http.StatusInternalServerError)
+		errorJSON(w, "Error in deleting post", http.StatusInternalServerError)
 		return
 	}
 
@@ -130,4 +130,8 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
+}
+
+func errorJSON(w http.ResponseWriter, message string, status int) {
+	writeJSON(w, status, map[string]string{"error": message})
 }

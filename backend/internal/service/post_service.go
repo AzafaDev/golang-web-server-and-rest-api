@@ -8,11 +8,11 @@ import (
 )
 
 type PostService struct {
-	repo repository.PostRepository
+	repo *repository.PostRepository
 }
 
 func NewPostService(repo *repository.PostRepository) *PostService {
-	return &PostService{repo: *repo} 
+	return &PostService{repo: repo} 
 }
 
 func (s *PostService) GetAll(ctx context.Context) ([]models.Post, error) {
