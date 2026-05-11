@@ -8,27 +8,26 @@ import (
 )
 
 type Config struct {
-	DBURL string
-	Port  string
+	DBURL     string
+	PORT      string
+	JWTSECRET string
 }
 
-func LoadConfig() *Config {
+func LoadEnv() *Config {
 	err := godotenv.Load()
 	if err != nil {
-		fmt.Println("Info: .env file not found, using system environment variables")
+		fmt.Println("Info: missing .env file")
 	}
-
 	return &Config{
-		DBURL: getEnv("DATABASE_URL", ""),
-		Port:  getEnv("PORT", "8080"),
+		DBURL:     getEnv("DATABASE_URL", ""),
+		PORT:      getEnv("PORT", "8080"),
+		JWTSECRET: getEnv("JWT_SECRET", ""),
 	}
 }
 
 func getEnv(key, defaultValue string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
-	} else {
-		return defaultValue
 	}
-
+	return defaultValue
 }
